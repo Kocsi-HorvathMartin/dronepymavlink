@@ -40,7 +40,7 @@ def yaw(irany):                                                                 
     connection.mav.command_long_send(connection.target_system, 
                                          connection.target_component, 
                                          mavutil.mavlink.MAV_CMD_CONDITION_YAW, 
-                                         0, angle,10,irany,0,0,0,0)
+                                         0, angle,10,irany,1,0,0,0)
 
 def leszall():
     connection.mav.command_long_send(connection.target_system,                       #Leszállás
