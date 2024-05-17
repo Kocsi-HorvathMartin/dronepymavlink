@@ -10,7 +10,7 @@ def mozgas():
                                                                                       int(0b110111111000), x, y, z, 10, 10, 0, 0, 0, 0, 0, 0))
 
 def hatar_szog(szog):
-    if szog>359:
+    if szog>=360:
         szog-=360
     if szog<0:
         szog+=360
@@ -20,8 +20,10 @@ def head_irany(fok):        #headingnek megfelelő irányba történő elmozdul�
     global x,y
     fok=hatar_szog(fok)
     fok=math.radians(fok)
-    x+=0.1/math.sin(fok)
-    y+=0.1/math.cos(fok)
+    if math.sin(fok)!=0:
+        x+=0.1/math.sin(fok)
+    if math.cos(fok)!=0:
+        y+=0.1/math.cos(fok)
     mozgas()
     
 def felszall():
@@ -54,7 +56,7 @@ def yaw(irany):                                                                 
     connection.mav.command_long_send(connection.target_system, 
                                          connection.target_component, 
                                          mavutil.mavlink.MAV_CMD_CONDITION_YAW, 
-                                         0, angle,10,irany,0,0,0,0)
+                                         0, angle,100,irany,0,0,0,0)
 
 def leszall():
     connection.mav.command_long_send(connection.target_system,                       #Leszállás
@@ -96,16 +98,16 @@ def on_press(key):
     print(y)
     try:
         if key.char=='w':    #Mozgás előre W nyomásra
-            head_irany(angle-180)
+            head_irany(angle)
         
         if key.char=='s':    #Mozgás hátra S nyomásra
-            head_irany(angle)
+            head_irany(angle-180)
 
         if key.char=='d':    #Mozgás jobbra D nyomásra
-            head_irany(angle+90)
+            head_irany(angle-90)
 
         if key.char=='a':    #Mozgás balra A nyomásra
-            head_irany(angle-90)
+            head_irany(angle+90)
         
         if key.char=='r':    #Mozgás fel R nyomásra
             z-=0.1
@@ -166,7 +168,6 @@ x=0.0
 y=0.0
 z=-10.0
 angle=0
-stop()
 
 # Collect events until released
 with keyboard.Listener(
