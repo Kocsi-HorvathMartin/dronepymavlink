@@ -32,7 +32,8 @@ def felszall():
     global z
     z=-10.0
 
-def yaw(irany):                                                                     #Yaw elfordítás és annak iránya
+def yaw(irany):                                                                        #Yaw elfordítás és annak iránya
+    global angle
     if angle>360:
         angle-=360
     if angle<0:
@@ -40,7 +41,7 @@ def yaw(irany):                                                                 
     connection.mav.command_long_send(connection.target_system, 
                                          connection.target_component, 
                                          mavutil.mavlink.MAV_CMD_CONDITION_YAW, 
-                                         0, angle,10,irany,1,0,0,0)
+                                         0, angle,10,irany,0,0,0,0)
 
 def leszall():
     connection.mav.command_long_send(connection.target_system,                       #Leszállás
@@ -73,7 +74,8 @@ def stop():                 #Megállás jelenlegi pozícióba
     x=msg.x
     y=msg.y
     z=msg.z
-    mozgas()   
+    mozgas()
+    yaw(0)
 
 def on_press(key):
     global x,y,z,angle
