@@ -1,5 +1,6 @@
 from pymavlink import mavutil
 from pynput import keyboard
+import math
 
 def mozgas():
     global x,y,z
@@ -7,6 +8,21 @@ def mozgas():
                                                                                       connection.target_component, 
                                                                                       mavutil.mavlink.MAV_FRAME_LOCAL_NED, 
                                                                                       int(0b110111111000), x, y, z, 10, 10, 0, 0, 0, 0, 0, 0))
+
+def hatar_szog(szog):
+    if szog>359:
+        szog-=360
+    if szog<0:
+        szog+=360
+    return szog
+
+def head_irany(fok):        #headingnek megfelelő irányba történő elmozdulás
+    global x,y
+    fok=hatar_szog(fok)
+    fok=math.radians(fok)
+    x+=0.1/math.sin(fok)
+    y+=0.1/math.cos(fok)
+    mozgas()
     
 def felszall():
     connection.mav.command_long_send(connection.target_system,                      #GUIDED MODE-ba váltás
@@ -34,10 +50,7 @@ def felszall():
 
 def yaw(irany):                                                                        #Yaw elfordítás és annak iránya
     global angle
-    if angle>360:
-        angle-=360
-    if angle<0:
-        angle+=360
+    angle=hatar_szog(angle)
     connection.mav.command_long_send(connection.target_system, 
                                          connection.target_component, 
                                          mavutil.mavlink.MAV_CMD_CONDITION_YAW, 
@@ -83,20 +96,16 @@ def on_press(key):
     print(y)
     try:
         if key.char=='w':    #Mozgás előre W nyomásra
-            x+=0.1
-            mozgas()
+            head_irany(angle-180)
         
         if key.char=='s':    #Mozgás hátra S nyomásra
-            x-=0.1
-            mozgas()
+            head_irany(angle)
 
         if key.char=='d':    #Mozgás jobbra D nyomásra
-            y+=0.1
-            mozgas()
+            head_irany(angle+90)
 
         if key.char=='a':    #Mozgás balra A nyomásra
-            y-=0.1
-            mozgas()
+            head_irany(angle-90)
         
         if key.char=='r':    #Mozgás fel R nyomásra
             z-=0.1
