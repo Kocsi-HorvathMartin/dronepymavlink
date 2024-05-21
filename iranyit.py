@@ -2,21 +2,21 @@ from pymavlink import mavutil
 from pynput import keyboard
 import math
 
-def mozgas():
+def mozgas():           #Drón mozgatása x,y,z változónak megfelelően
     global x,y,z
     connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,connection.target_system,
                                                                                       connection.target_component, 
                                                                                       mavutil.mavlink.MAV_FRAME_LOCAL_NED, 
                                                                                       int(0b110111111000), x, y, z, 10, 10, 0, 0, 0, 0, 0, 0))
 
-def hatar_szog(szog):
+def hatar_szog(szog):   #Heading szögének határolása
     if szog>=360:
         szog-=360
     if szog<0:
         szog+=360
     return szog
 
-def head_irany(fok):        #headingnek megfelelő irányba történő elmozdulás
+def head_irany(fok):    #headingnek megfelelő irányba történő elmozdulás
     global x,y
     fok=hatar_szog(fok)
     fok=round(math.radians(fok),2)
@@ -36,7 +36,7 @@ def head_irany(fok):        #headingnek megfelelő irányba történő elmozdul�
         y+=0.1
     mozgas()
     
-def felszall():
+def felszall():         #Felszállás
     connection.mav.command_long_send(connection.target_system,                      #GUIDED MODE-ba váltás
                                  connection.target_component,
                                  mavutil.mavlink.MAV_CMD_DO_SET_MODE, 
@@ -60,7 +60,7 @@ def felszall():
     yaw(0)
 
 
-def yaw(irany):                                                                        #Yaw elfordítás és annak iránya
+def yaw(irany):         #Yaw elfordítás az adott iránynak megfelelően
     global angle
     angle=hatar_szog(angle)
     connection.mav.command_long_send(connection.target_system, 
@@ -68,7 +68,7 @@ def yaw(irany):                                                                 
                                          mavutil.mavlink.MAV_CMD_CONDITION_YAW, 
                                          0, angle,100,irany,0,0,0,0)
 
-def leszall():
+def leszall():          #Leszállás
     connection.mav.command_long_send(connection.target_system,                       #Leszállás
                                      connection.target_component,
                                      mavutil.mavlink.MAV_CMD_NAV_LAND,
@@ -85,7 +85,7 @@ def leszall():
     global z
     z=0.0
 
-def stop():                 #Megállás jelenlegi pozícióba
+def stop():             #Megállás jelenlegi pozícióba
     global x,y,z
     msg=None
     connection.mav.request_data_stream_send(connection.target_system, connection.target_component, 
@@ -103,23 +103,24 @@ def stop():                 #Megállás jelenlegi pozícióba
     z=msg.z
     mozgas()
 
-def on_press(key):
+def on_press(key):      #Gomb lenyomások kezelése
     global x,y,z,angle
     print(x)
     print(y)
     try:
         current_keys.add(key.char)
-        if {'w', 'a'} == current_keys:
+        if {'w', 'a'} == current_keys:      #Előre és balra elmozdulás: w+a
             head_irany(angle-45)
         
-        elif {'w', 'd'} == current_keys:
+        elif {'w', 'd'} == current_keys:    #Előre és jobbra elmozdulás: w+d
             head_irany(angle+45)
 
-        elif {'s', 'a'} == current_keys:
+        elif {'s', 'a'} == current_keys:    #Hátra és balra elmozdulás: s+a
             head_irany(angle+225)
         
-        elif {'s', 'd'} == current_keys:
+        elif {'s', 'd'} == current_keys:    #Hátra és jobbra elmozdulás: s+d
             head_irany(angle-225)
+        
         elif key.char=='w':    #Mozgás előre W nyomásra
             head_irany(angle)
         
@@ -158,11 +159,11 @@ def on_press(key):
     except AttributeError:
         print()
 
-def on_release(key):
+def on_release(key):    #Gomb felengedések kezelése
     global x,y,z
     try:
         current_keys.remove(key.char)
-        if key.char=='w':
+        if key.char=='w':       #Bármely vezérlő gomb felengedésénél megállás az aktuális pozícióba
             stop()
             
         if key.char=='s':
