@@ -19,11 +19,21 @@ def hatar_szog(szog):
 def head_irany(fok):        #headingnek megfelelő irányba történő elmozdulás
     global x,y
     fok=hatar_szog(fok)
-    fok=math.radians(fok)
-    if math.sin(fok)!=0:
-        x+=0.1/math.sin(fok)
-    if math.cos(fok)!=0:
-        y+=0.1/math.cos(fok)
+    fok=round(math.radians(fok),2)
+    if math.sin(fok)!=0 and math.cos(fok)!=0:
+        if fok<math.pi and fok>math.pi/2:
+            x-=0.1/math.sin(fok)
+            y-=0.1/math.cos(fok)
+        elif fok<2*math.pi and fok>math.pi*1.5:
+            x-=0.1/math.sin(fok)
+            y-=0.1/math.cos(fok)
+        else:
+            x+=0.1/math.sin(fok)
+            y+=0.1/math.cos(fok)
+    elif math.sin(fok)==0:
+        x+=0.1
+    else:
+        y+=0.1
     mozgas()
     
 def felszall():
@@ -104,10 +114,10 @@ def on_press(key):
             head_irany(angle-180)
 
         if key.char=='d':    #Mozgás jobbra D nyomásra
-            head_irany(angle-90)
+            head_irany(angle+90)
 
         if key.char=='a':    #Mozgás balra A nyomásra
-            head_irany(angle+90)
+            head_irany(angle-90)
         
         if key.char=='r':    #Mozgás fel R nyomásra
             z-=0.1
