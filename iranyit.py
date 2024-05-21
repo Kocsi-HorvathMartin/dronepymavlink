@@ -107,44 +107,57 @@ def on_press(key):
     print(x)
     print(y)
     try:
-        if key.char=='w':    #Mozgás előre W nyomásra
+        current_keys.add(key.char)
+        if {'w', 'a'} == current_keys:
+            head_irany(angle-45)
+        
+        elif {'w', 'd'} == current_keys:
+            head_irany(angle+45)
+
+        elif {'s', 'a'} == current_keys:
+            head_irany(angle+225)
+        
+        elif {'s', 'd'} == current_keys:
+            head_irany(angle-225)
+        elif key.char=='w':    #Mozgás előre W nyomásra
             head_irany(angle)
         
-        if key.char=='s':    #Mozgás hátra S nyomásra
+        elif key.char=='s':    #Mozgás hátra S nyomásra
             head_irany(angle-180)
 
-        if key.char=='d':    #Mozgás jobbra D nyomásra
+        elif key.char=='d':    #Mozgás jobbra D nyomásra
             head_irany(angle+90)
 
-        if key.char=='a':    #Mozgás balra A nyomásra
+        elif key.char=='a':    #Mozgás balra A nyomásra
             head_irany(angle-90)
         
-        if key.char=='r':    #Mozgás fel R nyomásra
+        elif key.char=='r':    #Mozgás fel R nyomásra
             z-=0.1
             mozgas()
 
-        if key.char=='f':    #Mozgás le F nyomásra
+        elif key.char=='f':    #Mozgás le F nyomásra
             z+=0.1
             mozgas()
         
-        if key.char=='e':    #Yaw jobbra E nyomásra
+        elif key.char=='e':    #Yaw jobbra E nyomásra
             angle+=1
             yaw(1)
 
-        if key.char=='q':    #Yaw balra Q nyomásra
+        elif key.char=='q':    #Yaw balra Q nyomásra
             angle-=1
             yaw(-1)
         
-        if key.char=='1':    #Felszállás 1 nyomásra
+        elif key.char=='1':    #Felszállás 1 nyomásra
             felszall()
 
-        if key.char=='0':    #Leszállás 0 nyomásra
+        elif key.char=='0':    #Leszállás 0 nyomásra
             leszall()
     except:
         print("No such a key")
 
 def on_release(key):
     global x,y,z
+    current_keys.remove(key.char)
     if key.char=='w':
         stop()
         
@@ -174,6 +187,7 @@ print("Heartbeat from system (system %u component %u)" % (connection.target_syst
 
 print("Felszállás 1-es gomb lenyomásával!")
 print("Leszállás 0-ás gomb lenyomásával!")
+current_keys = set()
 x=0.0
 y=0.0
 z=-10.0
