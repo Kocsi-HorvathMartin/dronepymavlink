@@ -57,8 +57,8 @@ def felszall():
                                  0, 0,0,0,0,0,0, 10)
     msg=connection.recv_match(type='COMMAND_ACK', blocking=True)
     print(msg)
-    global z
-    z=-10.0
+    yaw(0)
+
 
 def yaw(irany):                                                                        #Yaw elfordítás és annak iránya
     global angle
@@ -93,6 +93,8 @@ def stop():                 #Megállás jelenlegi pozícióba
                                         100, 1)
     while msg==None:
         msg=connection.recv_match(type='LOCAL_POSITION_NED', blocking=True)
+        print(msg)
+
     connection.mav.request_data_stream_send(connection.target_system, connection.target_component, 
                                             mavutil.mavlink.MAV_DATA_STREAM_POSITION, 
                                             100, 0)
@@ -100,7 +102,6 @@ def stop():                 #Megállás jelenlegi pozícióba
     y=msg.y
     z=msg.z
     mozgas()
-    yaw(0)
 
 def on_press(key):
     global x,y,z,angle
@@ -152,46 +153,51 @@ def on_press(key):
 
         elif key.char=='0':    #Leszállás 0 nyomásra
             leszall()
-    except:
-        print("No such a key")
+        else:
+            print("No such a key")
+    except AttributeError:
+        print()
 
 def on_release(key):
     global x,y,z
-    current_keys.remove(key.char)
-    if key.char=='w':
-        stop()
-        
-    if key.char=='s':
-        stop()
+    try:
+        current_keys.remove(key.char)
+        if key.char=='w':
+            stop()
+            
+        if key.char=='s':
+            stop()
 
-    if key.char=='d':
-        stop()
+        if key.char=='d':
+            stop()
 
-    if key.char=='a':
-        stop()
-        
-    if key.char=='r':
-        stop()
+        if key.char=='a':
+            stop()
+            
+        if key.char=='r':
+            stop()
 
-    if key.char=='f':
-        stop()
+        if key.char=='f':
+            stop()
+    except AttributeError:
+        print()
     if key == keyboard.Key.esc:     # Stop listener
-            return False
+                return False
 
-
-
-
+x=0.0
+y=0.0
+z=0.0
+angle=0
 connection=mavutil.mavlink_connection('tcp:127.0.0.1:5762')
 connection.wait_heartbeat()
 print("Heartbeat from system (system %u component %u)" % (connection.target_system, connection.target_component))
-
+print("Waiting for position...")
+stop()
 print("Felszállás 1-es gomb lenyomásával!")
 print("Leszállás 0-ás gomb lenyomásával!")
 current_keys = set()
-x=0.0
-y=0.0
-z=-10.0
-angle=0
+if z<0:
+    yaw(angle)
 
 # Collect events until released
 with keyboard.Listener(
