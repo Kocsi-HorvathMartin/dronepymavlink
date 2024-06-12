@@ -132,11 +132,15 @@ szakasz_hely=egyenlet(pont_hely[0],pont_hely[1],poz.lat,poz.lon)
 benne_van=False
 if is_point_in_polygon((poz.lat,poz.lon),polygon):
     benne_van=True
+    
 for i in range(len(szakasz_pol)):
     if szakasz_pol[i][0]==None:
-        if poz.lat<=x[i] and pont_hely[0]>=x[i]:
+        sorba=sorrend(poz.lat,pont_hely[0])
+        if sorba[0]<=x[i] and sorba[1]>=x[i]:
             benne_van=True
-        elif poz.lat>=x[i] and pont_hely[0]<=x[i]:
+    elif szakasz_hely[0]==None:
+        sorba=sorrend(x[i],x[i+1])
+        if sorba[0]<=poz.lat and sorba[1]>=poz.lat:
             benne_van=True
     else:
         x_m=(szakasz_pol[i][1]-szakasz_hely[1])/(szakasz_pol[i][0]-szakasz_hely[0])
