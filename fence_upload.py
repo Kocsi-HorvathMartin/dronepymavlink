@@ -14,12 +14,15 @@ def beolvas(file_path):     #json fájlból fence coordináták kiolvasása és 
         data = json.load(file)
     for i in range(len(data['features'])):
         coordinates=data['features'][i]['geometry'][0]['horizontalProjection']['coordinates'][0]
-        for j in range(len(coordinates)):
-            lat,lon=formaz(coordinates[j])
-            item(mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                 mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-                 0,0,
-                 len(coordinates),0,0,0,lat,lon,0)
+        if len(mission)+len(coordinates)>70:    #Az első 70 fence pont engedélyezése feltöltésre 
+            break
+        else:
+            for j in range(len(coordinates)):
+                lat,lon=formaz(coordinates[j])
+                item(mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                    mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
+                    0,0,
+                    len(coordinates),0,0,0,lat,lon,0)
 
 def item(frame, command, current, autocontinue, param1, param2, param3, param4, param5, param6, param7):    #Egy mission elem hozzáfűzése az adott missionhöz
      global mission
