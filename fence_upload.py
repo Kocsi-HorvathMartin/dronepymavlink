@@ -1,7 +1,7 @@
 from pymavlink import mavutil
 import json
 
-def akt_poz():           #Jelenlegi pozícióba
+def akt_poz():              #Jelenlegi pozícióba
     connection.mav.command_long_send(connection.target_system,
                                  connection.target_component, 
                                  mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 
@@ -22,7 +22,7 @@ def beolvas(file_path):     #json fájlból fence coordináták kiolvasása és 
         data = json.load(file)
     return data
 
-def fence_feltolt(data,poz):
+def fence_feltolt(data,poz):#Aktuális magásságnak megfelelő fencek első 69 pontjának hozzáadása feltöltésre
     poz=int(poz.relative_alt)/1000
     for i in range(len(data['features'])):
         felso=data['features'][i]['geometry'][0]['upperLimit']
@@ -43,7 +43,7 @@ def item(frame, command, current, autocontinue, param1, param2, param3, param4, 
      global mission
      mission.append([frame, command,current, autocontinue, param1, param2, param3,param4,param5,param6,param7])
 
-def mission_feltolt():              #Mission feltöltése
+def mission_feltolt():       #Mission feltöltése
     global mission
     n=len(mission)
     connection.mav.mission_count_send(connection.target_system,
