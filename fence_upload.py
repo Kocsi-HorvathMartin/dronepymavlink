@@ -22,16 +22,16 @@ def beolvas(file_path):     #json fájlból fence coordináták kiolvasása és 
         data = json.load(file)
     return data
 
-def fence_feltolt(data,poz):#Aktuális magásságnak megfelelő fencek első 69 pontjának hozzáadása feltöltésre
-    poz=int(poz.relative_alt)/1000
+def fence_feltolt(data,poz):#Aktuális magásságnak megfelelő fencek első 67 pontjának hozzáadása feltöltésre
+    poz=poz.relative_alt/1000
+    if poz<0:
+        poz=0
     for i in range(len(data['features'])):
         felso=data['features'][i]['geometry'][0]['upperLimit']
         also=data['features'][i]['geometry'][0]['lowerLimit']
         if poz>=also and poz<=felso:
             coordinates=data['features'][i]['geometry'][0]['horizontalProjection']['coordinates'][0]
-            if len(mission)+len(coordinates)>69:
-                break
-            else:
+            if len(mission)+len(coordinates)<=67:
                 for j in range(len(coordinates)):
                     lat,lon=formaz(coordinates[j])
                     item(mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
