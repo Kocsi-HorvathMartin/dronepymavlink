@@ -20,7 +20,9 @@ def beolvas(file_path):     #json fájlból fence coordináták kiolvasása és 
     with open(file_path, 'r', encoding='utf-8-sig') as file:
     # Load the JSON content
         data = json.load(file)
-    poz=akt_poz()
+    return data
+
+def fence_feltolt(data,poz):
     poz=int(poz.relative_alt)/1000
     for i in range(len(data['features'])):
         felso=data['features'][i]['geometry'][0]['upperLimit']
@@ -41,7 +43,7 @@ def item(frame, command, current, autocontinue, param1, param2, param3, param4, 
      global mission
      mission.append([frame, command,current, autocontinue, param1, param2, param3,param4,param5,param6,param7])
 
-def feltolt():              #Mission feltöltése
+def mission_feltolt():              #Mission feltöltése
     global mission
     n=len(mission)
     connection.mav.mission_count_send(connection.target_system,
@@ -77,9 +79,11 @@ connection.mav.mission_clear_all_send(connection.target_system, connection.targe
 msg=connection.recv_match(type='MISSION_ACK',blocking=True)
 print(msg)
 
+data=beolvas('/home/kocsi-horvath/Documents/uav_202406181054.json')
+poz=akt_poz()
 mission=[]
-beolvas('/home/kocsi-horvath/Documents/uav_202406181054.json')
+fence_feltolt(data,poz)
 if len(mission)!=0:
-    feltolt()
+    mission_feltolt()
 else:
-    print("No fence at this altitude")
+    print("There is not any fence at this altitude: ", poz.relative_alt/1000,"m")
