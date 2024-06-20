@@ -1,7 +1,7 @@
 from pymavlink import mavutil
 import json
 
-def formaz(coordinate):     #Koordináták formázás és helyes sorrendbe rakása
+def formaz(coordinate):     #Koordináták formázás (10**-7 és int alakra) és helyes sorrendbe rakása
      lon=round(coordinate[0],7)*pow(10,7)
      lat=round(coordinate[1],7)*pow(10,7)
      return int(lat),int(lon)
@@ -57,9 +57,10 @@ connection=mavutil.mavlink_connection('tcp:127.0.0.1:5762')
 connection.wait_heartbeat()
 print("Heartbeat from system (system %u component %u)" % (connection.target_system, connection.target_component))
 
-connection.mav.mission_clear_all_send(connection.target_system, connection.target_component,1)
+connection.mav.mission_clear_all_send(connection.target_system, connection.target_component,1)              #Összes fence pont törlése
 msg=connection.recv_match(type='MISSION_ACK',blocking=True)
 print(msg)
+
 mission=[]
 beolvas('/home/kocsi-horvath/Documents/uav_202406181054.json')
 feltolt()
