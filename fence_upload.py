@@ -1,6 +1,14 @@
 from pymavlink import mavutil
 import json
 
+def akt_poz():           #Jelenlegi pozícióba
+    connection.mav.command_long_send(connection.target_system,
+                                 connection.target_component, 
+                                 mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 
+                                 0, 33, 0,0,0,0,0,1)
+    msg=connection.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+    return msg
+
 def formaz(coordinate):     #Koordináták formázás (10**-7 és int alakra) és helyes sorrendbe rakása
      lon=round(coordinate[0],7)*pow(10,7)
      lat=round(coordinate[1],7)*pow(10,7)
@@ -12,17 +20,22 @@ def beolvas(file_path):     #json fájlból fence coordináták kiolvasása és 
     with open(file_path, 'r', encoding='utf-8-sig') as file:
     # Load the JSON content
         data = json.load(file)
+    poz=akt_poz()
+    poz=int(poz.relative_alt)/1000
     for i in range(len(data['features'])):
-        coordinates=data['features'][i]['geometry'][0]['horizontalProjection']['coordinates'][0]
-        if len(mission)+len(coordinates)>70:    #Az első 70 fence pont engedélyezése feltöltésre 
-            break
-        else:
-            for j in range(len(coordinates)):
-                lat,lon=formaz(coordinates[j])
-                item(mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-                    mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
-                    0,0,
-                    len(coordinates),0,0,0,lat,lon,0)
+        felso=data['features'][i]['geometry'][0]['upperLimit']
+        also=data['features'][i]['geometry'][0]['lowerLimit']
+        if poz>=also and poz<=felso:
+            coordinates=data['features'][i]['geometry'][0]['horizontalProjection']['coordinates'][0]
+            if len(mission)+len(coordinates)>69:
+                break
+            else:
+                for j in range(len(coordinates)):
+                    lat,lon=formaz(coordinates[j])
+                    item(mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                        mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
+                        0,0,
+                        len(coordinates),0,0,0,lat,lon,0)
 
 def item(frame, command, current, autocontinue, param1, param2, param3, param4, param5, param6, param7):    #Egy mission elem hozzáfűzése az adott missionhöz
      global mission
@@ -66,4 +79,7 @@ print(msg)
 
 mission=[]
 beolvas('/home/kocsi-horvath/Documents/uav_202406181054.json')
-feltolt()
+if len(mission)!=0:
+    feltolt()
+else:
+    print("No fence at this altitude")
