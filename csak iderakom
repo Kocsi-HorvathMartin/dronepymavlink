@@ -1,0 +1,225 @@
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <thread>
+#include <chrono>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include "/home/nm/ide/include/mavlink/generated/common/mavlink.h"
+
+// Global variables
+int sock = -1;
+struct sockaddr_in server_addr;
+const char* server_ip = "127.0.0.1";
+const int server_port = 5762;
+
+void init_sockets() {
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        std::cerr << "Failed to create socket" << std::endl;
+        exit(1);
+    }
+    
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(server_port);
+    inet_pton(AF_INET, server_ip, &server_addr.sin_addr);
+}
+
+void close_sockets() {
+    close(sock);
+}
+
+void get_line_params(double x1, double y1, double x2, double y2, double& m, double& b) {
+    if (x1 == x2) {
+        m = NAN;
+        b = x1;
+    } else {
+        m = (y2 - y1) / (x2 - x1);
+        b = y1 - m * x1;
+    }
+}
+
+bool find_intersection(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4) {
+    double m1, b1, m2, b2;
+    get_line_params(x1, y1, x2, y2, m1, b1);
+    get_line_params(x3, y3, x4, y4, m2, b2);
+
+    double x, y;
+    if (std::isnan(m1)) {
+        x = b1;
+        if (x3 == x4) return false;
+        y = m2 * x + b2;
+    } else if (std::isnan(m2)) {
+        x = b2;
+        y = m1 * x + b1;
+    } else {
+        if (m1 == m2) return false;
+        x = (b2 - b1) / (m1 - m2);
+        y = m1 * x + b1;
+    }
+
+    if (std::min(x1, x2) <= x && x <= std::max(x1, x2) && std::min(y1, y2) <= y && y <= std::max(y1, y2) &&
+        std::min(x3, x4) <= x && x <= std::max(x3, x4) && std::min(y3, y4) <= y && y <= std::max(y3, y4)) {
+        return true;
+    }
+    return false;
+}
+
+void head_irany(double fok, double& lat, double& lon) {
+    fok = fok / 100.0;
+    lat += 2700 * cos(fok * M_PI / 180.0);
+    lon += 2700 * sin(fok * M_PI / 180.0);
+}
+
+void send_mavlink_message(mavlink_message_t* msg) {
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+    int len = mavlink_msg_to_send_buffer(buf, msg);
+    sendto(sock, buf, len, 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
+}
+
+void recv_mavlink_message(mavlink_message_t* msg) {
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+    int len = recvfrom(sock, buf, sizeof(buf), 0, NULL, NULL);
+    mavlink_status_t status;
+
+    for (int i = 0; i < len; ++i) {
+        if (mavlink_parse_char(MAVLINK_COMM_0, buf[i], msg, &status)) {
+            break;
+        }
+    }
+}
+
+mavlink_message_t akt_poz() {
+    mavlink_message_t msg;
+    mavlink_command_long_t cmd;
+    cmd.target_system = 1;
+    cmd.target_component = 1;
+    cmd.command = MAV_CMD_REQUEST_MESSAGE;
+    cmd.confirmation = 0;
+    cmd.param1 = 33;
+    cmd.param2 = 0;
+    cmd.param3 = 0;
+    cmd.param4 = 0;
+    cmd.param5 = 0;
+    cmd.param6 = 0;
+    cmd.param7 = 1;
+    mavlink_msg_command_long_encode(1, 1, &msg, &cmd);
+    send_mavlink_message(&msg);
+
+    recv_mavlink_message(&msg);
+    return msg;
+}
+
+bool is_point_in_polygon(double x, double y, const std::vector<std::pair<double, double>>& polygon) {
+    bool inside = false;
+    double xinters;
+    double p1x, p1y, p2x, p2y;
+    p1x = polygon[0].first;
+    p1y = polygon[0].second;
+    for (size_t i = 1; i <= polygon.size(); i++) {
+        p2x = polygon[i % polygon.size()].first;
+        p2y = polygon[i % polygon.size()].second;
+        if (y > std::min(p1y, p2y)) {
+            if (y <= std::max(p1y, p2y)) {
+                if (x <= std::max(p1x, p2x)) {
+                    if (p1y != p2y) {
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x;
+                    }
+                    if (p1x == p2x || x <= xinters) {
+                        inside = !inside;
+                    }
+                }
+            }
+        }
+        p1x = p2x;
+        p1y = p2y;
+    }
+    return inside;
+}
+
+void fence_download(std::vector<double>& x, std::vector<double>& y, std::vector<std::pair<double, double>>& polygon) {
+    mavlink_message_t msg;
+    mavlink_mission_request_list_t request;
+    request.target_system = 1;
+    request.target_component = 1;
+    request.mission_type = MAV_MISSION_TYPE_FENCE;
+    mavlink_msg_mission_request_list_encode(1, 1, &msg, &request);
+    send_mavlink_message(&msg);
+
+    recv_mavlink_message(&msg);
+    mavlink_mission_count_t mission_count;
+    mavlink_msg_mission_count_decode(&msg, &mission_count);
+
+    for (int i = 0; i < mission_count.count; i++) {
+        mavlink_mission_request_int_t request_int;
+        request_int.target_system = 1;
+        request_int.target_component = 1;
+        request_int.seq = i;
+        request_int.mission_type = mission_count.mission_type;
+        mavlink_msg_mission_request_int_encode(1, 1, &msg, &request_int);
+        send_mavlink_message(&msg);
+
+        recv_mavlink_message(&msg);
+        mavlink_mission_item_int_t item;
+        mavlink_msg_mission_item_int_decode(&msg, &item);
+        if (&msg != NULL) {
+            x.push_back(item.x);
+            y.push_back(item.y);
+            polygon.emplace_back(item.x, item.y);
+        } else {
+            std::cerr << "Failed to receive mission item " << i << std::endl;
+        }
+    }
+}
+
+int main() {
+    init_sockets();
+
+    std::vector<double> x;
+    std::vector<double> y;
+    std::vector<std::pair<double, double>> polygon;
+
+    fence_download(x, y, polygon);
+
+    if (!polygon.empty()) {
+        polygon.push_back(polygon[0]);
+        x.push_back(x[0]);
+        y.push_back(y[0]);
+    } else {
+        std::cerr << "Nincs kapott polygon pont" << std::endl;
+    }
+
+    while (true) {
+        bool vizsgalt = false;
+        mavlink_message_t poz = akt_poz();
+
+        mavlink_global_position_int_t global_position;
+        mavlink_msg_global_position_int_decode(&poz, &global_position);
+        double heading = global_position.hdg;
+        double lat = global_position.lat / 1e7;
+        double lon = global_position.lon / 1e7;
+
+        double pont_hely[2];
+        head_irany(heading, lat, lon);
+        pont_hely[0] = lat;
+        pont_hely[1] = lon;
+
+        if (is_point_in_polygon(lat, lon, polygon) || is_point_in_polygon(pont_hely[0], pont_hely[1], polygon)) {
+            vizsgalt = true;
+        } else {
+            for (size_t i = 0; i < polygon.size() - 1; i++) {
+                if (find_intersection(pont_hely[0], pont_hely[1], lat, lon, x[i], y[i], x[i + 1], y[i + 1])) {
+                    vizsgalt = true;
+                    break;
+                }
+            }
+        }
+        std::cout << vizsgalt << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        system("clear");
+    }
+
+    close_sockets();
+    return 0;
+}
