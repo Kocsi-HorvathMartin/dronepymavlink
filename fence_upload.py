@@ -24,6 +24,7 @@ def beolvas(file_path):     #json fájlból fence coordináták kiolvasása és 
 
 def fence_feltolt(data,poz):#Aktuális magásságnak megfelelő fencek első 67 pontjának hozzáadása feltöltésre
     poz=poz.relative_alt/1000
+    k=0
     if poz<0:
         poz=0
     for i in range(len(data['features'])):
@@ -32,12 +33,14 @@ def fence_feltolt(data,poz):#Aktuális magásságnak megfelelő fencek első 67 
         if poz>=also and poz<=felso:
             coordinates=data['features'][i]['geometry'][0]['horizontalProjection']['coordinates'][0]
             if len(mission)+len(coordinates)<=67:
+                k+=1
                 for j in range(len(coordinates)):
                     lat,lon=formaz(coordinates[j])
                     item(mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
                         mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION,
                         0,0,
                         len(coordinates),0,0,0,lat,lon,0)
+    print(k)
 
 def item(frame, command, current, autocontinue, param1, param2, param3, param4, param5, param6, param7):    #Egy mission elem hozzáfűzése az adott missionhöz
      global mission
