@@ -31,20 +31,8 @@ def head_irany(fok):    #headingnek megfelelő irányba történő elmozdulás
     z=msg.z
     fok=hatar_szog(fok)
     fok=round(math.radians(fok),2)
-    if math.sin(fok)!=0 and math.cos(fok)!=0:
-        if fok<math.pi and fok>math.pi/2:
-            x-=0.1/math.sin(fok)
-            y-=0.1/math.cos(fok)
-        elif fok<2*math.pi and fok>math.pi*1.5:
-            x-=0.1/math.sin(fok)
-            y-=0.1/math.cos(fok)
-        else:
-            x+=0.1/math.sin(fok)
-            y+=0.1/math.cos(fok)
-    elif math.sin(fok)==0:
-        x+=0.1
-    else:
-        y+=0.1
+    y+=0.1*math.sin(fok)
+    x+=0.1*math.cos(fok)
     mozgas()
     
 def felszall():         #Felszállás
