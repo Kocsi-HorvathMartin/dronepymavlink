@@ -8,6 +8,15 @@ def mozgas():           #Drón mozgatása x,y,z változónak megfelelően
                                                                                       connection.target_component, 
                                                                                       mavutil.mavlink.MAV_FRAME_LOCAL_NED, 
                                                                                       int(0b110111111000), x, y, z, 10, 10, 0, 0, 0, 0, 0, 0))
+    yaw(-1)
+
+def akt_poz():           #Jelenlegi pozícióba
+    connection.mav.command_long_send(connection.target_system,
+                                 connection.target_component, 
+                                 mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 
+                                 0, 32, 0,0,0,0,0,1)
+    msg=connection.recv_match(type='LOCAL_POSITION_NED', blocking=True)
+    return msg
 
 def hatar_szog(szog):   #Heading szögének határolása
     if szog>=360:
@@ -17,7 +26,9 @@ def hatar_szog(szog):   #Heading szögének határolása
     return szog
 
 def head_irany(fok):    #headingnek megfelelő irányba történő elmozdulás
-    global x,y
+    global x,y,z
+    msg=akt_poz()
+    z=msg.z
     fok=hatar_szog(fok)
     fok=round(math.radians(fok),2)
     if math.sin(fok)!=0 and math.cos(fok)!=0:
@@ -87,17 +98,9 @@ def leszall():          #Leszállás
 
 def stop():             #Megállás jelenlegi pozícióba
     global x,y,z
-    msg=None
-    connection.mav.request_data_stream_send(connection.target_system, connection.target_component, 
-                                        mavutil.mavlink.MAV_DATA_STREAM_POSITION, 
-                                        100, 1)
-    while msg==None:
-        msg=connection.recv_match(type='LOCAL_POSITION_NED', blocking=True)
-        print(msg)
+    msg=akt_poz()
+    print(msg)
 
-    connection.mav.request_data_stream_send(connection.target_system, connection.target_component, 
-                                            mavutil.mavlink.MAV_DATA_STREAM_POSITION, 
-                                            100, 0)
     x=msg.x
     y=msg.y
     z=msg.z
@@ -198,7 +201,7 @@ print("Felszállás 1-es gomb lenyomásával!")
 print("Leszállás 0-ás gomb lenyomásával!")
 current_keys = set()
 if z<0:
-    yaw(angle)
+    yaw(-1)
 
 # Collect events until released
 with keyboard.Listener(
