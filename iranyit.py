@@ -7,7 +7,7 @@ def mozgas():           #Drón mozgatása x,y,z változónak megfelelően
     connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,connection.target_system,
                                                                                       connection.target_component, 
                                                                                       mavutil.mavlink.MAV_FRAME_LOCAL_NED, 
-                                                                                      int(0b110111111000), x, y, z, 10, 10, 0, 0, 0, 0, 0, 0))
+                                                                                      int(0b110111111000), x, y, z, 10, 10, 5, 0, 0, 0, 0, 0))
     yaw(-1)
 
 def akt_poz():           #Jelenlegi pozícióba
@@ -140,11 +140,17 @@ def on_press(key):      #Gomb lenyomások kezelése
             angle-=1
             yaw(-1)
         
-        elif key.char=='1':    #Felszállás 1 nyomásra
+        elif key.char=='k':    #Felszállás 1 nyomásra
             felszall()
 
-        elif key.char=='0':    #Leszállás 0 nyomásra
+        elif key.char=='l':    #Leszállás 0 nyomásra
             leszall()
+        elif key.char=='c':
+            x=float(input("X: "))
+            y=float(input("Y: "))
+            z=float(input("Z: "))
+            z*=(-1)
+            mozgas()
         else:
             print("No such a key")
     except AttributeError:
@@ -185,8 +191,9 @@ connection.wait_heartbeat()
 print("Heartbeat from system (system %u component %u)" % (connection.target_system, connection.target_component))
 print("Waiting for position...")
 stop()
-print("Felszállás 1-es gomb lenyomásával!")
-print("Leszállás 0-ás gomb lenyomásával!")
+print("Felszállás k gomb lenyomásával!")
+print("Leszállás l gomb lenyomásával!")
+print("Koordináta megadása c gomb lenyomásával!")
 current_keys = set()
 if z<0:
     yaw(-1)
