@@ -145,7 +145,7 @@ def on_press(key):      #Gomb lenyomások kezelése
 
         elif key.char=='l':    #Leszállás 0 nyomásra
             leszall()
-        elif key.char=='c':
+        elif key.char=='c':    #Cél koordináta megadása
             x=float(input("X: "))
             y=float(input("Y: "))
             z=float(input("Z: "))
