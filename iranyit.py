@@ -2,6 +2,14 @@ from pymavlink import mavutil
 from pynput import keyboard
 import math
 
+def arm(arm):
+    connection.mav.command_long_send(connection.target_system,                      #Armolás
+                                 connection.target_component, 
+                                 mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
+                                 0, arm, 0,0,0,0,0,0)
+    msg=connection.recv_match(type='COMMAND_ACK', blocking=True)
+    return msg
+
 def mozgas():           #Drón mozgatása x,y,z változónak megfelelően
     global x,y,z
     connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,connection.target_system,
@@ -15,7 +23,7 @@ def akt_poz():           #Jelenlegi pozícióba
                                  connection.target_component, 
                                  mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 
                                  0, 32, 0,0,0,0,0,1)
-    msg=connection.recv_match(type='LOCAL_POSITION_NED', blocking=True)
+    msg=connection.recv_match(type='LOCAL_POSITION_NED', blocking=True, timeout=3)
     return msg
 
 def hatar_szog(szog):   #Heading szögének határolása
@@ -43,12 +51,7 @@ def felszall():         #Felszállás
     msg=connection.recv_match(type='COMMAND_ACK', blocking=True)
     print(msg)
 
-    connection.mav.command_long_send(connection.target_system,                      #Armolás
-                                 connection.target_component, 
-                                 mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
-                                 0, 1, 0,0,0,0,0,0)
-    msg=connection.recv_match(type='COMMAND_ACK', blocking=True)
-    print(msg)
+    print(arm(1))
 
     connection.mav.command_long_send(connection.target_system,                      #Felszállás
                                  connection.target_component, 
@@ -75,19 +78,13 @@ def leszall():          #Leszállás
     msg=connection.recv_match(type='COMMAND_ACK', blocking=True)
     print(msg)
     
-    connection.mav.command_long_send(connection.target_system,                      #Disarmolás
-                                 connection.target_component, 
-                                 mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 
-                                 0, 0, 0,0,0,0,0,0)
-    msg=connection.recv_match(type='COMMAND_ACK', blocking=True)
-    print(msg)
+    print(arm(0))
     global z
     z=0.0
 
 def stop():             #Megállás jelenlegi pozícióba
     global x,y,z
     msg=akt_poz()
-    print(msg)
 
     x=msg.x
     y=msg.y
@@ -151,6 +148,12 @@ def on_press(key):      #Gomb lenyomások kezelése
             z=float(input("Z: "))
             z*=(-1)
             mozgas()
+        elif key.char=='m':    #Jelenlegi koordináta lekérés
+            print(akt_poz())
+        elif key.char=='h':    #Vészleállítás ha nem disarm akkor land
+            print(arm(0))
+            if arm(0).result!=0:
+                leszall()
         else:
             print("No such a key")
     except AttributeError:
@@ -190,10 +193,15 @@ connection=mavutil.mavlink_connection('tcp:127.0.0.1:5762')
 connection.wait_heartbeat()
 print("Heartbeat from system (system %u component %u)" % (connection.target_system, connection.target_component))
 print("Waiting for position...")
+msg=None
+while msg==None:
+    msg=akt_poz()
+print(msg)
 stop()
 print("Felszállás k gomb lenyomásával!")
 print("Leszállás l gomb lenyomásával!")
 print("Koordináta megadása c gomb lenyomásával!")
+print("Disarmolás h gomb lenyomásával!")
 current_keys = set()
 if z<0:
     yaw(-1)
@@ -209,3 +217,4 @@ listener = keyboard.Listener(
     on_press=on_press,
     on_release=on_release)
 listener.start()
+arm(0)
