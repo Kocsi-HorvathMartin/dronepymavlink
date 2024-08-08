@@ -93,6 +93,15 @@ def mission_feltolt():
     msg=connection.recv_match(type='MISSION_ACK', blocking=True, timeout=5)
     print(msg)
 
+def fence_enable():
+    connection.mav.command_long_send(connection.target_system,
+                                     connection.target_component,
+                                     mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE,
+                                     0,1,0,0,0,0,0,0
+    )
+    msg=connection.recv_match(type='COMMAND_ACK', blocking=True, timeout=5)
+    print(msg)
+
 #-----Main-----
 connection=mavutil.mavlink_connection('tcp:127.0.0.1:5762')
 connection.wait_heartbeat()
@@ -101,6 +110,8 @@ print("Heartbeat from system (system %u component %u)" % (connection.target_syst
 connection.mav.mission_clear_all_send(connection.target_system, connection.target_component,1)              #Összes fence pont törlése
 msg=connection.recv_match(type='MISSION_ACK',blocking=True)
 print(msg)
+
+fence_enable()
 
 data=beolvas('/home/kocsi-horvath/Documents/uav_202408071203.json')
 while True:
