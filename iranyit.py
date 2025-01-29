@@ -15,8 +15,7 @@ def mozgas():           #Drón mozgatása x,y,z változónak megfelelően
     connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,connection.target_system,
                                                                                       connection.target_component, 
                                                                                       mavutil.mavlink.MAV_FRAME_LOCAL_NED, 
-                                                                                      int(0b110111111000), x, y, z, 10, 10, 5, 0, 0, 0, 0, 0))
-    yaw(-1)
+                                                                                      int(0b110111000000), x, y, z, 1, 1, 0.5, 0.1, 0.1, 0.1, 0, 0))
 
 def akt_poz():           #Jelenlegi pozícióba
     connection.mav.command_long_send(connection.target_system,
